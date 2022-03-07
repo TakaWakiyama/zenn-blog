@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "emoji": "open https://getemoji.com/"
   },
   "keywords": [],
   "author": "",
@@ -13,3 +14,4 @@
     "zenn-cli": "^0.1.107"
   }
 }
+
