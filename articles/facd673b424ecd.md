@@ -8,16 +8,10 @@ published: false
 
 ## はじめに
 
-sweeep Box のフロントエンドの開発で
-CD構築をした際に詰まった部分や工夫した部分を中心に
-どのように Google App Engine (以下GAE)
-に NuxtJSアプリケーションをデプロイしているか解説していきます。
-GAEやCloud Buildの基本的なマニフェスト構成・使い方については解説は行いません。
 
 動作確認環境
 `nodejs version 15.14.0`
 `nuxt version 2.15.7`
-
 
 ## GAEにNuxtJSアプリケーションをデプロイする
 
@@ -71,6 +65,8 @@ Google Cloud CLIをインストールする必要があります。
 
     > handlers 要素は、app.yaml 構成ファイルの必須要素です。この要素は、URL パターンと処理方法の説明リストを提供します。App Engine で URL を処理するには、アプリケーション コードを実行するか、画像、CSS、JavaScript など、コードと一緒にアップロードされた静的ファイルを提供します。
 
+    `secure`フィールドについて Cloud Load Balancing から GAEへリクエストを流すときはロードバランサ側で別途設定が必要になりますので、注意してください。
+
     詳細については
     [app\.yaml リファレンス  \|  Python 2 の App Engine スタンダード環境  \|  Google Cloud](https://cloud.google.com/appengine/docs/standard/python/config/appref#handlers_element)
     に詳しい記載があるので、こちらを参考にしてください。
@@ -80,12 +76,16 @@ Google Cloud CLIをインストールする必要があります。
 
 ## CloudBuild から GAEにアプリケーションをデプロイする
 
+やっていることはおおよそこんな感じです。
+![](/images/facd673b424ecd/gae-cloudbuild.jpg =400x)
+
 ### ビルド構成ファイルの作成の作成
 
-CloudBuildでデプロイを動かすために必要な
+CloudBuildでデプロイを実行する上で必要な
 構成ファイルを作成します。
 `json` または `yaml` 形式ををサポートしていますが
 今回は `yaml` で作成します。
+実際の yamlファイルは以下のようになります。
 
 ```yaml: cloudbuild.yaml
 steps:
@@ -168,7 +168,7 @@ timeout: 3600s
 
 ### 解説
 
-* cloudbuildの構成
+#### cloudbuildの構成
 基本的なビルド構成ファイルは下記のようなstepsフィールドからなります。
 
 ```yaml
@@ -186,7 +186,7 @@ timeout: 3600s
 
 [公式ドキュメント](https://cloud.google.com/build/docs/configuring-builds/create-basic-configuration) 詳細はこちら
 
-* GAEのマニフェストファイルを環境毎に置換する
+#### GAEのマニフェストファイルを環境毎に置換する
 
 ```yaml
 - name: gcr.io/cloud-builders/gcloud
@@ -201,14 +201,14 @@ id: replace appyaml env
 entrypoint: bash
 ```
 
-    CloudBuildトリガーの環境変数(後述)を `sed` で app.yamlに埋め込んでいます。
-    _SERVICE_NAME を変数として扱うことで複数環境を用意できます。
-    テスト環境が複数必要という場合に役立っています。
+CloudBuildトリガーの環境変数(後述)を `sed` で app.yamlに埋め込んでいます。
+_SERVICE_NAME を変数として扱うことで複数環境を用意できます。
+テスト環境が複数必要という場合に役立っています。
 
-    _INSTANCE_CLASS,　_MIN_INSTANCES, _MAX_INSTANCESは
-    環境毎に要求されるパフォーマンスとコストの要件を満たすため変数として埋め込んでいます。
+_INSTANCE_CLASS,　_MIN_INSTANCES, _MAX_INSTANCESは
+環境毎に要求されるパフォーマンスとコストの要件を満たすため変数として埋め込んでいます。
 
-* node_modulesをキャッシュすることでデプロイ時間を短縮している
+#### node_modulesをキャッシュすることでデプロイ時間を短縮している
 
 ```yaml
 # cacheファイルを取得
@@ -247,20 +247,20 @@ id: unzip moduel cache
       - 'archive node_modules'
 ```
 
-    デプロイ後 `node_modules` を zip化したものを
-    gcpのバケットに保存しています。
-    デプロイ実行時に 解凍し node_modulesに再配置しています。
-    `package.json` に変更がある場合は追加でライブラリのインストールが
-    行われます。
-    導入前と比べデプロイにかかる時間が 3分半 ~ 4分程度短縮されました。
+デプロイ後 `node_modules` を zip化したものを
+gcpのバケットに保存しています。
+デプロイ実行時に 解凍し node_modulesに再配置しています。
+`package.json` に変更がある場合は追加でライブラリのインストールが
+行われます。
+導入前と比べデプロイにかかる時間が 3分半 ~ 4分程度短縮されました。
 
-    作成にあたり下記の記事を参考にさせていただきました。
-    [Cloud Buildでnode\_modulesをキャッシュしてビルド時間を高速化する](https://sunday-morning.app/posts/2021-04-07-cloud-build-cache-node-modules)
+作成にあたり下記の記事を参考にさせていただきました。
+[Cloud Buildでnode\_modulesをキャッシュしてビルド時間を高速化する](https://sunday-morning.app/posts/2021-04-07-cloud-build-cache-node-modules)
 
-    [CloudBuildで特定のディレクトリをcacheして高速化する \- Qiita](https://qiita.com/moyashidaisuke/items/777b543c0d8a7a35a731)
+[CloudBuildで特定のディレクトリをcacheして高速化する \- Qiita](https://qiita.com/moyashidaisuke/items/777b543c0d8a7a35a731)
 
 
-* SecretManager からサーバサイドの秘匿情報をマウントしている
+#### SecretManager からサーバサイドの秘匿情報をマウントしている
 
 ```yaml
 - name: gcr.io/cloud-builders/gcloud
@@ -271,8 +271,12 @@ args:
 id: mount secret
 ```
 
+サーバーサイドレンダリング時にCallするAPIの鍵などリポジトリには置きたくないが
+実行時に読み込ませたいファイルをSecret Managerに置いて
+デプロイ時にマウントしています。
+本番運用時はサービスアカウントに適切なロールを割り当てることが重要と思います。
 
-* 環境変数を CloudBuildに寄せたいが期待通りに動かない問題
+#### 環境変数を CloudBuildに寄せたいが期待通りに動かない問題
 
 デプロイ時に環境変数がうまく渡らずちょっと詰まりました。
 `.env`ファイルを環境毎に読ませて build コマンドを環境毎に用意する方法もありましたが、
@@ -299,14 +303,26 @@ env:
 
 ### CloudBuildの設定
 
-* トリガーの作成 + 環境変数を設定する
-* サービスアカウントの権限を設定する
+#### トリガーの作成 + 環境変数を設定する
 
-![](/images/facd673b424ecd/gae-cloudbuild.jpg =400x)
+トリガーの代入変数のフォームに環境変数を入力します。
+環境変数は_から始める必要があります。
+
+![](/images/facd673b424ecd/cloudbuild_env.png)
+
+
+#### サービスアカウントの権限を設定する
+
+デプロイを行う前に下記の権限を設定する必要があります。
+![](/images/facd673b424ecd/cloudbuild_sa_role.png)
+
+[Cloud Build サービス アカウント  \|  Cloud Build のドキュメント  \|  Google Cloud](https://cloud.google.com/build/docs/cloud-build-service-account) 詳細はこちらをご確認ください。
+
+上記二つを完了させたらデプロイの実行が可能になります。
+手動実行や特定ブランチへのマージをトリガーに実行してみてください。
 
 ## むすびに
 
 立ち上げたばかりなので荒削りで荒削りな部分も散見しますが、
 同じように NuxtJSをGAEにデプロイしようとしている人の助けになればと
 一緒に
-
