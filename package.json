@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "emoji": "open https://getemoji.com/"
+    "emoji": "open https://getemoji.com/",
+    "new:article": "npx zenn new:article",
+    "preview": "npx zenn preview"
   },
   "keywords": [],
   "author": "",
