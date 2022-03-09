@@ -84,7 +84,9 @@ Google Cloud CLIをインストールする必要があります。
   [app\.yaml リファレンス  \|  Python 2 の App Engine スタンダード環境  \|  Google Cloud](https://cloud.google.com/appengine/docs/standard/python/config/appref#handlers_element)
   に詳しい記載があるので、こちらを参考にしてください。
 
-NuxtJSの handlersは [Nuxt \- Google App Engine](https://nuxtjs.org/deployments/google-appengine/) こちらを参考に作成しました。
+NuxtJSの handlersは こちらを参考に作成しました。
+
+https://nuxtjs.org/deployments/google-appengine/
 
 ## CloudBuild から GAEにアプリケーションをデプロイする
 
@@ -186,9 +188,9 @@ timeout: 3600s
 
 ```yaml
 - name: 'node:16' # タスクを実行するコンテナイメージ
-args: - install # 引数のリスト
-id: install dep # ステップのID
-entrypoint: npm # 指定がない場合は args の最初の要素 or コンテナエントリポイント
+  args: - install # 引数のリスト
+  id: install dep # ステップのID
+  entrypoint: npm # 指定がない場合は args の最初の要素 or コンテナエントリポイント
 ```
 
 ```yaml
@@ -203,15 +205,15 @@ timeout: 3600s
 
 ```yaml
 - name: gcr.io/cloud-builders/gcloud
-args:
-    - '-c'
-    - |
-    sed -i -e "s/_SERVICE_NAME/$_SERVICE_NAME/g" app.yaml
-    sed -i -e "s/_INSTANCE_CLASS/$_INSTANCE_CLASS/g" app.yaml
-    sed -i -e "s/_MIN_INSTANCES/$_MIN_INSTANCES/g" app.yaml
-    sed -i -e "s/_MAX_INSTANCES/$_MAX_INSTANCES/g" app.yaml
-id: replace appyaml env
-entrypoint: bash
+  args:
+      - '-c'
+      - |
+      sed -i -e "s/_SERVICE_NAME/$_SERVICE_NAME/g" app.yaml
+      sed -i -e "s/_INSTANCE_CLASS/$_INSTANCE_CLASS/g" app.yaml
+      sed -i -e "s/_MIN_INSTANCES/$_MIN_INSTANCES/g" app.yaml
+      sed -i -e "s/_MAX_INSTANCES/$_MAX_INSTANCES/g" app.yaml
+  id: replace appyaml env
+  entrypoint: bash
 ```
 
 CloudBuildトリガーの環境変数(後述)を `sed` で `app.yaml`に埋め込んでいます。
@@ -226,18 +228,18 @@ CloudBuildトリガーの環境変数(後述)を `sed` で `app.yaml`に埋め�
 ```yaml
 # cacheファイルを取得
 - name: gcr.io/cloud-builders/gsutil
-args:
-    - 'cp'
-    - 'gs://$_BACKET_NAME/cache.tar.gz'
-    - 'cache.tar.gz'
-id: retrive moduel cache
-# cacheファイルを解凍
+  args:
+      - 'cp'
+      - 'gs://$_BACKET_NAME/cache.tar.gz'
+      - 'cache.tar.gz'
+  id: retrive moduel cache
+  # cacheファイルを解凍
 - name: bash
-args:
-    - 'tar'
-    - 'xzf'
-    - 'cache.tar.gz'
-id: unzip moduel cache
+  args:
+      - 'tar'
+      - 'xzf'
+      - 'cache.tar.gz'
+  id: unzip moduel cache
 # ~~~ デプロイ
 ---　
 # zip化
@@ -270,19 +272,20 @@ gcpのバケットに保存しています。
 gcsのアップロードを行なわなければもう少し早くなるかもしれないので、要検証です。
 
 作成にあたり下記の記事を参考にさせていただきました。
-[Cloud Buildでnode\_modulesをキャッシュしてビルド時間を高速化する](https://sunday-morning.app/posts/2021-04-07-cloud-build-cache-node-modules)
 
-[CloudBuildで特定のディレクトリをcacheして高速化する \- Qiita](https://qiita.com/moyashidaisuke/items/777b543c0d8a7a35a731)
+https://sunday-morning.app/posts/2021-04-07-cloud-build-cache-node-modules
+
+https://qiita.com/moyashidaisuke/items/777b543c0d8a7a35a731
 
 #### SecretManager からサーバサイドの秘匿情報をマウントしている
 
 ```yaml
 - name: gcr.io/cloud-builders/gcloud
-args:
-    - '-c'
-    - |
-    gcloud secrets versions access latest --secret $_SECRET_NAME >> file_path/hoge
-id: mount secret
+  args:
+      - '-c'
+      - |
+      gcloud secrets versions access latest --secret $_SECRET_NAME >> file_path/hoge
+  id: mount secret
 ```
 
 サーバーサイドレンダリング時にCallするAPIの鍵などリポジトリには置きたくないが
@@ -335,7 +338,7 @@ env:
 [Cloud Build サービス アカウント  \|  Cloud Build のドキュメント  \|  Google Cloud](https://cloud.google.com/build/docs/cloud-build-service-account) 詳細はこちらをご確認ください。
 
 上記二つを完了させたらデプロイの実行が可能になります。
-手動実行や特定ブランチへのマージをトリガーに実行してみてください。
+手動実行や特定ブランチへのマージをトリガーに実行してみてください!
 
 ## むすびに
 
