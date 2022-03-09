@@ -93,7 +93,7 @@ https://nuxtjs.org/deployments/google-appengine/
 やっていることはおおよそこんな感じです。
 ![](/images/facd673b424ecd/gae-cloudbuild.jpg =400x)
 
-### ビルド構成ファイルの作成の作成
+### ビルド構成ファイルの作成
 
 CloudBuildでデプロイを実行する上で必要な
 構成ファイルを作成します。
