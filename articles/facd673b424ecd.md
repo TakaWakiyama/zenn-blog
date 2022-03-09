@@ -1,17 +1,24 @@
 ---
-title: "Cloud Buildを使ってGAE に NuxtJSアプリケーションを自動デプロイしてみた"
+title: "Nuxt.js SSR アプリケーションを Cloud Buildを使って GAE に自動デプロイしてみた"
 emoji: "👓"
 type: "tech"
 topics: ["GCP", "CloudBuild", "GAE", "NuxtJS", "CD"]
-published: false
+published: true
 ---
 
 ## はじめに
 
+ビジネス書類を超カンタンに電子保管できるサービス sweeep Boxのフロントエンドの
+インフラ構築を行なった際に得た知見を公開します。
+SSR アプリケーションを GAEに自動でデプロイする部分について解説していきます。
+使用している言語・フレームワークは TypeScript × Nuxt.js です。
+CIの部分に関しては着手タイミングの問題で CircleCIを使って自動テストを行なっています。
+また、GCPの一般的な知識については解説しないです。
 
 動作確認環境
 `nodejs version 15.14.0`
 `nuxt version 2.15.7`
+`typescript version 4.4.4`
 
 ## GAEにNuxtJSアプリケーションをデプロイする
 
@@ -51,28 +58,33 @@ env_variables:
 
 ### 解説
 
-* `instance_class`, `service`, `min_instances`, `max_instances` は
+#### 環境変数の埋め込み
+
+`instance_class`, `service`, `min_instances`, `max_instances` は
 デプロイ時に各環境毎の設定を埋め込めるように実際の値ではなく `_環境変数名` としています。
 ```gcloud app deploy app.yaml --project [project-id]```
 でターミナルからデプロイの動作確認を行う場合、上記項目を削除してデフォルト値でのデプロイを行なってください。
 [クイックスタート: Google Cloud CLI をインストールする  \|  Cloud SDK のドキュメント](https://cloud.google.com/sdk/docs/install-sdk)
 Google Cloud CLIをインストールする必要があります。
 
-* `automatic_scaling` の詳細については [app\.yaml リファレンス  \|  Python 2 の App Engine スタンダード環境  \|  Google Cloud](https://cloud.google.com/appengine/docs/standard/python/config/appref#automatic_scaling) に詳しい記載があるので、こちらを参考にしてください。
+#### スケーリングに関して
+
+ `automatic_scaling` の詳細については [app\.yaml リファレンス  \|  Python 2 の App Engine スタンダード環境  \|  Google Cloud](https://cloud.google.com/appengine/docs/standard/python/config/appref#automatic_scaling) に詳しい記載があるので、こちらを参考にしてください。
 `target_cpu_utilization`, `target_throughput_utilization` によって インスタンスをスケールさせるCPUの閾値を設定しています。
 
-* `handlers` については公式ドキュメントに以下のように説明が記載されています。
+#### ハンドラー要素について
 
-    > handlers 要素は、app.yaml 構成ファイルの必須要素です。この要素は、URL パターンと処理方法の説明リストを提供します。App Engine で URL を処理するには、アプリケーション コードを実行するか、画像、CSS、JavaScript など、コードと一緒にアップロードされた静的ファイルを提供します。
+ `handlers` については公式ドキュメントに以下のように説明が記載されています。
 
-    `secure`フィールドについて Cloud Load Balancing から GAEへリクエストを流すときはロードバランサ側で別途設定が必要になりますので、注意してください。
+  > handlers 要素は、app.yaml 構成ファイルの必須要素です。この要素は、URL パターンと処理方法の説明リストを提供します。App Engine で URL を処理するには、アプリケーション コードを実行するか、画像、CSS、JavaScript など、コードと一緒にアップロードされた静的ファイルを提供します。
 
-    詳細については
-    [app\.yaml リファレンス  \|  Python 2 の App Engine スタンダード環境  \|  Google Cloud](https://cloud.google.com/appengine/docs/standard/python/config/appref#handlers_element)
-    に詳しい記載があるので、こちらを参考にしてください。
+  `secure`フィールドについて Cloud Load Balancing から GAEへリクエストを流すときはロードバランサ側で別途設定が必要になりますので、注意してください。
 
-* NuxtJSの handlersに関して
-    [Nuxt \- Google App Engine](https://nuxtjs.org/deployments/google-appengine/) こちらを参考に作成しました。
+  詳細については
+  [app\.yaml リファレンス  \|  Python 2 の App Engine スタンダード環境  \|  Google Cloud](https://cloud.google.com/appengine/docs/standard/python/config/appref#handlers_element)
+  に詳しい記載があるので、こちらを参考にしてください。
+
+NuxtJSの handlersは [Nuxt \- Google App Engine](https://nuxtjs.org/deployments/google-appengine/) こちらを参考に作成しました。
 
 ## CloudBuild から GAEにアプリケーションをデプロイする
 
@@ -169,6 +181,7 @@ timeout: 3600s
 ### 解説
 
 #### cloudbuildの構成
+
 基本的なビルド構成ファイルは下記のようなstepsフィールドからなります。
 
 ```yaml
@@ -184,7 +197,7 @@ timeout: 3600s
 
 のような追加のビルド構成フィールドを含めることができます。
 
-[公式ドキュメント](https://cloud.google.com/build/docs/configuring-builds/create-basic-configuration) 詳細はこちら
+[公式ドキュメント](https://cloud.google.com/build/docs/configuring-builds/create-basic-configuration) 詳細はこちらをご確認ください。
 
 #### GAEのマニフェストファイルを環境毎に置換する
 
@@ -201,11 +214,11 @@ id: replace appyaml env
 entrypoint: bash
 ```
 
-CloudBuildトリガーの環境変数(後述)を `sed` で app.yamlに埋め込んでいます。
-_SERVICE_NAME を変数として扱うことで複数環境を用意できます。
+CloudBuildトリガーの環境変数(後述)を `sed` で `app.yaml`に埋め込んでいます。
+`_SERVICE_NAME` を変数として扱うことで複数環境を用意できます。
 テスト環境が複数必要という場合に役立っています。
 
-_INSTANCE_CLASS,　_MIN_INSTANCES, _MAX_INSTANCESは
+`_INSTANCE_CLASS`,　`_MIN_INSTANCES`, `_MAX_INSTANCES`は
 環境毎に要求されるパフォーマンスとコストの要件を満たすため変数として埋め込んでいます。
 
 #### node_modulesをキャッシュすることでデプロイ時間を短縮している
@@ -249,16 +262,17 @@ id: unzip moduel cache
 
 デプロイ後 `node_modules` を zip化したものを
 gcpのバケットに保存しています。
-デプロイ実行時に 解凍し node_modulesに再配置しています。
+デプロイ実行時に 解凍し `node_modules` に再配置しています。
 `package.json` に変更がある場合は追加でライブラリのインストールが
 行われます。
 導入前と比べデプロイにかかる時間が 3分半 ~ 4分程度短縮されました。
+`package.json` の差分を見てライブラリの更新がなければ
+gcsのアップロードを行なわなければもう少し早くなるかもしれないので、要検証です。
 
 作成にあたり下記の記事を参考にさせていただきました。
 [Cloud Buildでnode\_modulesをキャッシュしてビルド時間を高速化する](https://sunday-morning.app/posts/2021-04-07-cloud-build-cache-node-modules)
 
 [CloudBuildで特定のディレクトリをcacheして高速化する \- Qiita](https://qiita.com/moyashidaisuke/items/777b543c0d8a7a35a731)
-
 
 #### SecretManager からサーバサイドの秘匿情報をマウントしている
 
@@ -276,6 +290,8 @@ id: mount secret
 デプロイ時にマウントしています。
 本番運用時はサービスアカウントに適切なロールを割り当てることが重要と思います。
 
+[Secret Manager のシークレットの使用  \|  Cloud Build のドキュメント  \|  Google Cloud](https://cloud.google.com/build/docs/securing-builds/use-secrets) 詳細はこちらをご確認ください。
+
 #### 環境変数を CloudBuildに寄せたいが期待通りに動かない問題
 
 デプロイ時に環境変数がうまく渡らずちょっと詰まりました。
@@ -285,6 +301,7 @@ CloudBuildに寄せることにしました。
 結果 `nuxt.config.js` の修正とマニフェストを以下の通り変更したら
 期待通り動くようになりました。
 CloudBuildトリガーの環境変数 と `npm run build` 実行時の環境変数は一致しないようです。
+(構築時は NUXT_ENVをつけないと クライアントの環境変数として扱われないという部分もつまずきました。)
 
 ```javascript:nuxt.config.js
 buildModules: {
@@ -310,7 +327,6 @@ env:
 
 ![](/images/facd673b424ecd/cloudbuild_env.png)
 
-
 #### サービスアカウントの権限を設定する
 
 デプロイを行う前に下記の権限を設定する必要があります。
@@ -323,6 +339,17 @@ env:
 
 ## むすびに
 
-立ち上げたばかりなので荒削りで荒削りな部分も散見しますが、
-同じように NuxtJSをGAEにデプロイしようとしている人の助けになればと
-一緒に
+立ち上げたばかりなので最適でない部分が存分にあるので、
+改善点等をコメント等で教えて頂けると嬉しいです！
+同じ悩みを抱えている方のご参考になればと思います!
+
+sweeep Box 開発の初期段階はリソースがカツカツな状況でしたが、
+CI/CD整備に初期投資することで、
+QAやスプリントレビューの準備を安心して楽に進めることができました。
+健全な快適な CI/CDライフを送っていきましょう！
+
+sweeepでは一緒に働くエンジニアを募集しています！
+自動化大好き!インフラ効率化したい！技術大好き！
+なエンジニアの方一緒に働きましょう！
+
+https://corp.sweeep.ai/recruit
