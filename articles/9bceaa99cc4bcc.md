@@ -118,7 +118,8 @@ sudo chmod 766 /opt/shared
 
 #### 永続ボリュームのデプロイ
 
-**次に永続ボリュームをデプロイして行きます。
+次に永続ボリュームをデプロイして行きます。
+
 [動的なプロビジョニングを行います](https://kubernetes.io/ja/docs/concepts/storage/persistent-volumes/#%E5%8B%95%E7%9A%84)
 PersistentVolume(PV), PersistentVolumeClaim(PVC)のリソースを作成します。
 PVとは 噛み砕くとクラスタに配置されるストレージそのもののようなイメージで、
@@ -180,7 +181,9 @@ test-disk   Pending                                                     12s
 
 ## 動作確認
 
-**Podをデプロイして本当にマウントされているか確認します。**
+Podをデプロイして本当にマウントされているか確認します。
+
+まず永続ボリュームをデプロイします
 
 ```bash:test-deployment.yaml
 apiVersion: apps/v1
@@ -217,6 +220,8 @@ spec:
             name: test-volume
 ```
 
+次に Deploymentをデプロイして、Pod内に入ってファイルの確認を行なっていきます。
+
 ```bash
 # Deploymentをデプロイ
 kubectl apply -f test-deployment.yaml
@@ -229,7 +234,7 @@ vim test-deployment.yaml
 kubectl apply -f test-deployment.yaml
 
 # pod を確認
-k get pods
+kubectl get pods
 > NAME                                READY   STATUS    RESTARTS   AGE
 test-deployment1-5fd94f4bc6-k9nfc   1/1     Running   0          7m38s
 test-deployment1-5fd94f4bc6-vpgq9   1/1     Running   0          9m16s
@@ -238,8 +243,8 @@ test-deployment2-5fd94f4bc6-qtplg   1/1     Running   0          7m4s
 
 # podに入る
 kubectl exec -it test-deployment1-5fd94f4bc6-k9nfc -- sh # - 1
-kubectl exec -it test-deployment1-5fd94f4bc6-vpgq9 -- sh # - 2 1と同じデプロイメントにひもづくPod
-kubectl exec -it test-deployment2-5fd94f4bc6-768fj -- sh # - 3 別のデプロイメントにひもづくPod
+kubectl exec -it test-deployment1-5fd94f4bc6-vpgq9 -- sh # - 2 1と同じDeploymentにひもづくPod
+kubectl exec -it test-deployment2-5fd94f4bc6-768fj -- sh # - 3 別のDeploymentにひもづくPod
 
 > /
 / cd mnt/test # - 1, 2, 3 で実行
