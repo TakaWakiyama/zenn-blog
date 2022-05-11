@@ -2,7 +2,7 @@
 title: "GKE Autopilotの永続ボリュームに Filestoreを使ってみた"
 emoji: "🗂"
 type: "tech"
-topics: ["GKE", "Kubenetes", "GCP"]
+topics: ["GKE", "Kubernetes", "GCP"]
 published: true
 ---
 
