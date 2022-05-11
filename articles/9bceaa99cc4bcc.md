@@ -95,8 +95,8 @@ AutopilotのPodからの変更はできないので、GCEのインスタンス�
 gcloud compute instances create temp-workload \
 --zone=asia-northeast1-b \
 --machine-type=f1-micro \
---network=sweeep-dev-vpc \
---subnet=sweeep-dev-vpc-subnet
+--network=${YOUR_VPC_NETWORK} \
+--subnet=${YOUR_SUB_NETWORK}
 ```
 
 GCEインスタンスの作成後
@@ -105,6 +105,7 @@ GCEインスタンスの作成後
 ```bash
 # ssh
 gcloud compute ssh temp-workload --zone=asia-northeast1-b
+> $gcpusername　
 sudo apt-get update &&  sudo apt-get install nfs-common
 # マウント
 sudo mkdir -p /opt/shared && sudo mount $FilestoreIP:/test_shared /opt/shared
